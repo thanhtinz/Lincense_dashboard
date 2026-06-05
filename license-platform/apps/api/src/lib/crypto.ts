@@ -114,8 +114,8 @@ export function encryptForTransport(runtimeKey: string): string {
 
 /**
  * Normalize and validate a hardware fingerprint hash.
- * Accepts both "sha256:<hex>" (license-sdk format) and a bare 64-char hex
- * digest (the format ShopVPS' getHardwareFingerprint() sends — no prefix).
+ * Accepts both a "sha256:"-prefixed digest and a bare 64-char hex digest
+ * (the format ShopVPS' getHardwareFingerprint() sends — no prefix).
  */
 export function validateFingerprint(fp: string): boolean {
   const hash = fp.startsWith('sha256:') ? fp.slice(7) : fp;

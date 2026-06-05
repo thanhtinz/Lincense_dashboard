@@ -3,6 +3,8 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { requireAdmin } from '../middleware/auth.js';
 import getRedis from '../lib/redis.js';
+import { sendRevokeNotice } from '../services/email.js';
+import { webhookEvents } from '../services/webhook.js';
 
 const router = Router();
 
@@ -26,7 +28,10 @@ router.post('/', requireAdmin, async (req: Request, res: Response): Promise<void
 
   const { key, reason } = parsed.data;
 
-  const license = await prisma.license.findUnique({ where: { key } });
+  const license = await prisma.license.findUnique({
+    where: { key },
+    include: { product: { select: { slug: true, name: true } } },
+  });
   if (!license) {
     res.status(404).json({ error: 'License not found' });
     return;
@@ -50,6 +55,17 @@ router.post('/', requireAdmin, async (req: Request, res: Response): Promise<void
   await invalidateLicenseCache(key);
 
   console.log(`[revoke] License revoked: ${key} | Reason: ${reason ?? 'N/A'} | Admin: ${req.admin?.email}`);
+
+  // Notify (non-blocking)
+  sendRevokeNotice({
+    to: license.customerEmail,
+    customerName: license.customerName,
+    licenseKey: license.key,
+    productName: license.product.name,
+    reason: reason ?? 'Revoked by admin',
+  }).catch((e: any) => console.error('[email] Revoke notice failed:', e.message));
+
+  webhookEvents.licenseRevoked(license, reason).catch(() => {});
 
   res.json({
     success: true,
@@ -125,6 +141,8 @@ router.post('/restore', requireAdmin, async (req: Request, res: Response): Promi
     where: { key },
     data: { revoked: false, revokedAt: null, revokedReason: null },
   });
+
+  webhookEvents.licenseRestored({ key, product: { slug: '' } }).catch(() => {});
 
   res.json({ success: true, key, message: 'License restored. Product can verify again immediately.' });
 });

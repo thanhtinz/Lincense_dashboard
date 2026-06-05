@@ -20,7 +20,10 @@ nó **không cần** import `license-sdk` trong repo này. Cụ thể ShopVPS đ
 
 Vì vậy **việc cần làm không phải nhúng SDK**, mà là **dựng phía server** (license-platform
 + license-dashboard) để cấp/quản lý các key mà middleware sẵn có của ShopVPS đi xác thực.
-`license-sdk/` trong repo chỉ dùng cho các sản phẩm tương lai chưa có sẵn phần client.
+
+> Ghi chú: bộ SDK nhúng (`license-sdk`) cùng `license-loadtest`, `maintenance-page` đã được
+> gỡ khỏi repo này vì ShopVPS không cần. Phần email + webhook (trước ở `license-extras`) đã
+> được **tích hợp thẳng vào `license-platform`**.
 
 ## Hợp đồng API — đã khớp ✓
 
@@ -68,22 +71,21 @@ nên **mọi license bật `hwBinding` đều bị từ chối với `HW_MISMATC
    **`LS_ENDPOINT=https://license.<tên-miền-của-bạn>`** (mặc định fallback là
    `https://license.yourdomain.com` — phải đổi). Sau đó vào `/setup` của ShopVPS,
    nhập license key vừa cấp; ShopVPS sẽ gọi `/api/v1/verify` và lưu vào `AppSetup`.
-6. **(Tuỳ chọn) `license-extras`** — copy email cảnh báo hết hạn + webhook vào API.
-7. **(Tuỳ chọn) `license-infra`** — Docker + Nginx + SSL để deploy production;
-   **`license-loadtest`** để benchmark sau khi lên.
+6. **Email + webhook** — đã tích hợp sẵn trong `license-platform`; chỉ cần điền
+   `SMTP_*` trong `.env` để bật email, và quản lý webhook qua `/api/v1/webhooks`.
+7. **(Tuỳ chọn) `license-infra`** — Docker + Nginx + SSL để deploy production.
 
 ## Lưu ý / điểm cần xác nhận thêm
 
 - **Ý nghĩa `runtime_key`.** Server cấp cho mỗi license một runtime key **ngẫu nhiên**
   rồi bọc transport (`encryptForTransport` → chuỗi `v1:...`). ShopVPS lưu `runtime_key`
   **nguyên trạng** (không giải mã lớp transport), tức coi nó như token mờ. Điều này nhất
-  quán (cả SDK trong repo cũng không giải mã lớp transport) nên **chạy được**, nhưng nếu
-  ý định ban đầu là dùng runtime key để **AES-giải-mã source/config** của sản phẩm thì
-  cần thống nhất lại: key phải là khoá đã mã hoá source, và client phải giải mã lớp transport.
-- **Schema `AppSetup` khác nhau — không sao.** `AppSetup` của ShopVPS (`id` kiểu String
-  `"singleton"`, có `setupBy`, không có `licenseServerUrl`) **khác** với schema mà
-  `license-sdk/db.ts` giả định (`id` Int `1`, có `licenseServerUrl`). Vì ShopVPS dùng code
-  client riêng chứ không dùng `license-sdk`, khác biệt này **không gây lỗi**. Chỉ cần lưu ý
-  **đừng** nhúng `license-sdk` vào ShopVPS (sẽ xung đột schema) — ShopVPS tự lo phần client.
+  quán nên **chạy được**, nhưng nếu ý định ban đầu là dùng runtime key để **AES-giải-mã
+  source/config** của sản phẩm thì cần thống nhất lại: key phải là khoá đã mã hoá source,
+  và client phải giải mã lớp transport.
+- **Đừng nhúng SDK vào ShopVPS.** `AppSetup` của ShopVPS (`id` String `"singleton"`, có
+  `setupBy`, không có `licenseServerUrl`) khác schema mà một SDK nhúng thường giả định.
+  ShopVPS đã có code client riêng nên **không cần** và **không nên** thêm SDK — tránh xung
+  đột schema. ShopVPS tự lo toàn bộ phần client.
 - **`version_range` khi cấp key.** Để trống = cho mọi version; nếu giới hạn (vd `"2.x"`)
   phải khớp version ShopVPS thực gửi, nếu không sẽ `VERSION_NOT_LICENSED`.

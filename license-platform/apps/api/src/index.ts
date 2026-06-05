@@ -11,6 +11,7 @@ import registerDomainRouter from './routes/registerDomain.js';
 import productsRouter from './routes/products.js';
 import authRouter from './routes/auth.js';
 import logsRouter from './routes/logs.js';
+import webhooksRouter from './routes/webhooks.js';
 
 // Lib
 import prisma from './lib/prisma.js';
@@ -68,6 +69,7 @@ app.use('/api/v1/issue', createAdminRateLimit(), issueRouter);
 app.use('/api/v1/revoke', createAdminRateLimit(), revokeRouter);
 app.use('/api/v1/products', createAdminRateLimit(), productsRouter);
 app.use('/api/v1/logs', createAdminRateLimit(), logsRouter);
+app.use('/api/v1/webhooks', createAdminRateLimit(), webhooksRouter);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────
 app.use((_req, res) => {

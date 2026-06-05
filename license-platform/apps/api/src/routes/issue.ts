@@ -3,6 +3,8 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { generateLicenseKey, encryptRuntimeKey, generateRuntimeKey } from '../lib/crypto.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { sendIssueConfirmation } from '../services/email.js';
+import { webhookEvents } from '../services/webhook.js';
 
 const router = Router();
 
@@ -68,6 +70,19 @@ router.post('/', requireAdmin, async (req: Request, res: Response): Promise<void
   });
 
   console.log(`[issue] New license issued: ${key} → ${body.customer_email} (${product.slug})`);
+
+  // Notify (non-blocking — must not delay the response)
+  sendIssueConfirmation({
+    to: license.customerEmail,
+    customerName: license.customerName,
+    licenseKey: license.key,
+    productName: product.name,
+    domains: license.domains,
+    expiresAt: license.expiresAt,
+    versionRange: license.versionRange,
+  }).catch((e: any) => console.error('[email] Issue confirmation failed:', e.message));
+
+  webhookEvents.licenseIssued({ ...license, product }).catch(() => {});
 
   res.status(201).json({
     key: license.key,

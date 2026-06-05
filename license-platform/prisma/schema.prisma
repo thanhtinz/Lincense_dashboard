@@ -123,3 +123,36 @@ enum AdminRole {
   SUPER_ADMIN
   ADMIN
 }
+
+model Webhook {
+  id          String   @id @default(cuid())
+  url         String
+  secret      String   // HMAC-SHA256 signing secret
+  events      String[] // ['license.issued', 'license.revoked', '*', ...]
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deliveries  WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event        String
+  url          String
+  statusCode   Int
+  attempt      Int      @default(1)
+  success      Boolean
+  payload      String   // JSON body sent
+  responseBody String?  // First 1000 chars of response
+  createdAt    DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
+}

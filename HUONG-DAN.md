@@ -155,9 +155,16 @@ server down (vẫn chạy), quá 24h thì chặn về trang maintenance.
 
 - `license-infra/` — Docker Compose + Nginx + SSL + script backup/ops để deploy.
   Sửa `license-infra/.env.example`, trỏ domain, bật HTTPS.
-- `license-extras/` — copy service email cảnh báo hết hạn + webhook vào API.
-- `license-loadtest/` — chạy benchmark tải sau khi lên production.
 - Chạy API bằng Docker: `cd license-platform && npm run docker:up`.
+
+### Email + Webhook (đã tích hợp sẵn trong API)
+
+Tính năng email (xác nhận cấp key, thông báo thu hồi, cảnh báo hết hạn 30/7/1 ngày)
+và webhook (sự kiện `license.issued`, `license.revoked`, `license.verified`…) **đã được
+tích hợp thẳng vào license-platform**. Để bật:
+1. Điền `SMTP_*` + `EMAIL_FROM` trong `.env` của API (xem `.env.example`).
+2. Quản lý webhook qua route `/api/v1/webhooks` (hoặc cURL) — tạo webhook nhận sẽ
+   trả secret 1 lần; verify chữ ký qua header `X-License-Signature`.
 
 ---
 

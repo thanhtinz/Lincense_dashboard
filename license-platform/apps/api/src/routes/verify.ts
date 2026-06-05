@@ -5,6 +5,7 @@ import { decryptRuntimeKey, encryptForTransport, validateFingerprint, normalizeF
 import { isVersionInRange } from '../lib/version.js';
 import { checkBanned, createVerifyRateLimit } from '../middleware/rateLimit.js';
 import getRedis from '../lib/redis.js';
+import { webhookEvents } from '../services/webhook.js';
 
 // VerifyResult values — mirror prisma/schema.prisma enum VerifyResult.
 // Defined locally so this module type-checks independently of `prisma generate`.
@@ -95,6 +96,7 @@ router.post(
     // ── 5. Revoke check ──────────────────────────────────────────────────────
     if (license.revoked) {
       await logVerify(body.key, domain, ip, userAgent, body.version, VerifyResult.REVOKED, undefined, license.id);
+      webhookEvents.licenseVerifyFailed(body.key, domain, 'REVOKED').catch(() => {});
       res.status(200).json({ valid: false, reason: 'REVOKED' });
       return;
     }
@@ -102,6 +104,7 @@ router.post(
     // ── 6. Expiry check ──────────────────────────────────────────────────────
     if (license.expiresAt && license.expiresAt < new Date()) {
       await logVerify(body.key, domain, ip, userAgent, body.version, VerifyResult.EXPIRED, undefined, license.id);
+      webhookEvents.licenseVerifyFailed(body.key, domain, 'EXPIRED').catch(() => {});
       res.status(200).json({
         valid: false,
         reason: 'EXPIRED',
@@ -174,6 +177,9 @@ router.post(
 
     // Anomaly detection: same key from multiple IPs
     await flagAnomalyIfNeeded(license.id, ip, getRedis());
+
+    // Fire webhook (non-blocking — verify must stay fast)
+    webhookEvents.licenseVerified(body.key, domain, license.product.slug).catch(() => {});
 
     res.status(200).json({
       valid: true,
