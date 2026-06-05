@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: lp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: license_platform
+      POSTGRES_USER: license_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strongpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"   # Remove in production — only expose to app network
+    networks:
+      - lp_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U license_user -d license_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: lp_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispassword} --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"   # Remove in production
+    networks:
+      - lp_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redispassword}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── API Server ─────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: lp_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://license_user:${POSTGRES_PASSWORD:-strongpassword}@postgres:5432/license_platform
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redispassword}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      RSA_PRIVATE_KEY: ${RSA_PRIVATE_KEY}
+      RSA_PUBLIC_KEY: ${RSA_PUBLIC_KEY}
+      AES_MASTER_KEY: ${AES_MASTER_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      DASHBOARD_URL: ${DASHBOARD_URL}
+    ports:
+      - "3001:3001"
+    networks:
+      - lp_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  lp_network:
+    driver: bridge

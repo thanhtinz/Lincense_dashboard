@@ -1,0 +1,75 @@
+# ============================================================
+# PATCH — Add email + webhook calls to existing routes
+# ============================================================
+# Apply these changes to the files in license-platform/apps/api/src/routes/
+
+# ── routes/issue.ts ───────────────────────────────────────────────────────
+# After: import { generateLicenseKey, ... } from '../lib/crypto.js';
+# ADD:
+import { sendIssueConfirmation } from '../services/email.js';
+import { webhookEvents } from '../services/webhook.js';
+
+# After: console.log(`[issue] New license issued: ...`);
+# ADD (non-blocking):
+sendIssueConfirmation({
+  to: license.customerEmail,
+  customerName: license.customerName,
+  licenseKey: license.key,
+  productName: product.name,
+  domains: license.domains,
+  expiresAt: license.expiresAt,
+  versionRange: license.versionRange,
+}).catch((e: any) => console.error('[email] Issue confirmation failed:', e.message));
+
+webhookEvents.licenseIssued({ ...license, product }).catch(() => {});
+
+# ── routes/revoke.ts ─────────────────────────────────────────────────────
+# After: import getRedis from '../lib/redis.js';
+# ADD:
+import { sendRevokeNotice } from '../services/email.js';
+import { webhookEvents } from '../services/webhook.js';
+
+# After: console.log(`[revoke] License revoked: ...`);
+# ADD (non-blocking):
+const revokedLic = await prisma.license.findUnique({
+  where: { key },
+  include: { product: { select: { slug: true, name: true } } },
+});
+if (revokedLic) {
+  sendRevokeNotice({
+    to: revokedLic.customerEmail,
+    customerName: revokedLic.customerName,
+    licenseKey: revokedLic.key,
+    productName: revokedLic.product.name,
+    reason: reason ?? 'Revoked by admin',
+  }).catch((e: any) => console.error('[email] Revoke notice failed:', e.message));
+
+  webhookEvents.licenseRevoked(revokedLic, reason).catch(() => {});
+}
+
+# In restore handler, after updating:
+webhookEvents.licenseRestored({ key, product: { slug: '' } }).catch(() => {});
+
+# ── routes/verify.ts ─────────────────────────────────────────────────────
+# After: import getRedis from '../lib/redis.js';
+# ADD:
+import { webhookEvents } from '../services/webhook.js';
+
+# After: res.status(200).json({ valid: true, ... });
+# ADD (non-blocking — DO NOT await, verify must be fast):
+webhookEvents.licenseVerified(body.key, domain, license.product.slug).catch(() => {});
+
+# Before each: res.status(200).json({ valid: false, reason: ... });
+# ADD for critical failures (revoked, expired):
+if (result === 'REVOKED' || result === 'EXPIRED') {
+  webhookEvents.licenseVerifyFailed(body.key, domain, result).catch(() => {});
+}
+
+# ── index.ts ─────────────────────────────────────────────────────────────
+# After: import { createAdminRateLimit } from './middleware/rateLimit.js';
+# ADD:
+import webhooksRouter from './routes/webhooks.js';
+
+# After: app.use('/api/v1/logs', ...);
+# ADD:
+app.use('/api/v1/webhooks', createAdminRateLimit(), webhooksRouter);

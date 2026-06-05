@@ -1,0 +1,125 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique // SHOPVPS, YOURAI, ...
+  prefix      String    @unique // SVP, YAI, ...
+  description String?
+  versions    String[]  // ["1.0", "1.1", "2.0", ...]
+  runtimeKey  String    // AES key dùng để decrypt source của product này
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  licenses    License[]
+
+  @@map("products")
+}
+
+model License {
+  id             String    @id @default(cuid())
+  key            String    @unique // LIC-SVP-A3F9X2YZ-KC82-A9
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+
+  // Customer info
+  customerName   String
+  customerEmail  String
+
+  // Domain whitelist — mảng cho phép nhiều domain
+  domains        String[]
+
+  // Version control
+  versionRange   String?   // "2.x", "1.x", null = tất cả
+
+  // Expiry
+  expiresAt      DateTime?
+
+  // Hardware binding
+  hwBinding      Boolean   @default(false)
+  hwFingerprint  String?   // SHA-256 hash, lưu sau lần verify đầu
+
+  // Runtime key — encrypted AES key trả về cho sản phẩm
+  runtimeKey     String    // Stored encrypted
+
+  // Status
+  revoked        Boolean   @default(false)
+  revokedAt      DateTime?
+  revokedReason  String?
+
+  // Domain change limit
+  domainChangeCount Int    @default(0)
+  maxDomainChanges  Int    @default(3)
+
+  // Metadata
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  verifyLogs     VerifyLog[]
+
+  @@index([productId])
+  @@index([customerEmail])
+  @@map("licenses")
+}
+
+model VerifyLog {
+  id        String   @id @default(cuid())
+  licenseId String?
+  license   License? @relation(fields: [licenseId], references: [id])
+
+  key       String   // Raw key được gửi lên (để log kể cả key không tồn tại)
+  domain    String
+  ip        String
+  userAgent String?
+  version   String?
+  result    VerifyResult
+  reason    String?  // Reason khi fail
+
+  createdAt DateTime @default(now())
+
+  @@index([licenseId])
+  @@index([key])
+  @@index([createdAt])
+  @@map("verify_logs")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         AdminRole @default(ADMIN)
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+enum VerifyResult {
+  SUCCESS
+  KEY_NOT_FOUND
+  PRODUCT_MISMATCH
+  REVOKED
+  EXPIRED
+  DOMAIN_MISMATCH
+  VERSION_NOT_LICENSED
+  HW_MISMATCH
+  RATE_LIMITED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}

@@ -1,0 +1,12 @@
+{
+  "name": "license-loadtest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node src/runner.js",
+    "report": "node src/runner.js && node src/report.js",
+    "quick": "QUICK=1 node src/runner.js"
+  },
+  "description": "Load test suite for License Platform API"
+}
