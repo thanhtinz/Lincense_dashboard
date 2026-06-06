@@ -148,7 +148,6 @@ router.get('/', requireAdmin, async (req: Request, res: Response): Promise<void>
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
-      include: { product: { select: { slug: true, name: true } } },
       select: {
         id: true,
         key: true,
@@ -161,7 +160,7 @@ router.get('/', requireAdmin, async (req: Request, res: Response): Promise<void>
         revoked: true,
         revokedAt: true,
         createdAt: true,
-        product: true,
+        product: { select: { slug: true, name: true } },
       },
     }),
     prisma.license.count({ where }),

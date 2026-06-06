@@ -122,11 +122,11 @@ router.get('/expiring', requireAdmin, async (req: Request, res: Response): Promi
       revoked: false,
       expiresAt: { gt: new Date(), lt: cutoff },
     },
-    include: { product: { select: { slug: true, name: true } } },
     orderBy: { expiresAt: 'asc' },
     select: {
       id: true, key: true, customerName: true, customerEmail: true,
-      domains: true, expiresAt: true, product: true,
+      domains: true, expiresAt: true,
+      product: { select: { slug: true, name: true } },
     },
   });
 
