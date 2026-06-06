@@ -1,0 +1,39 @@
+# =============================================================================
+# Dockerfile cho service API — build từ GỐC REPO (không cần set Root Directory)
+# Trên Railway: Settings → Build → Dockerfile Path = Dockerfile.api
+# =============================================================================
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy package + prisma (đường dẫn tính từ gốc repo)
+COPY license-platform/apps/api/package.json ./apps/api/
+COPY license-platform/prisma/ ./prisma/
+
+WORKDIR /app/apps/api
+RUN npm install
+
+# Source
+COPY license-platform/apps/api/src ./src
+COPY license-platform/apps/api/tsconfig.json .
+
+RUN npx prisma generate --schema=/app/prisma/schema.prisma
+RUN npm run build
+
+# -----------------------------------------------------------------------------
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache curl
+
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/node_modules ./node_modules
+COPY --from=builder /app/apps/api/package.json .
+COPY --from=builder /app/prisma ./prisma
+# src + tsconfig để entrypoint chạy seed (prisma/seed.ts import ../src/lib/crypto)
+COPY --from=builder /app/apps/api/src ./src
+COPY --from=builder /app/apps/api/tsconfig.json ./tsconfig.json
+
+COPY license-platform/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+EXPOSE 3001
+ENTRYPOINT ["./docker-entrypoint.sh"]

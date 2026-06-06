@@ -13,14 +13,24 @@ Redis của Railway (hoặc Upstash).
 ShopVPS đặt LS_ENDPOINT = URL public của service `api`.
 ```
 
-Repo đã có sẵn `railway.json` cho mỗi service + Dockerfile, nên Railway tự nhận cấu hình.
-
-> ❗ **QUAN TRỌNG — đây là monorepo:** bạn phải tạo **2 service riêng** và **set Root
-> Directory** cho từng cái (`license-platform` và `license-dashboard`). Nếu để 1 service
-> trỏ vào **gốc repo** mà không set Root Directory, Railway dùng builder tự động
-> (**Railpack**) ở gốc và báo lỗi `railpack process exited with an error` — vì ở gốc không
-> có app nào để build. Set đúng Root Directory thì Railway mới đọc `railway.json` trong thư
-> mục con và build bằng Dockerfile.
+> ❗ **Đây là monorepo → tạo 2 service riêng** (api + dashboard). Có 2 cách cấu hình build,
+> chọn **một**:
+>
+> **Cách A (khuyến nghị — KHÔNG cần Root Directory):** dùng 2 Dockerfile đặt sẵn ở gốc repo.
+> Mỗi service chỉ cần điền ô **Dockerfile Path**:
+>
+> | Service | Settings → Build → **Dockerfile Path** | Root Directory |
+> |---|---|---|
+> | api | `Dockerfile.api` | *(để mặc định, KHÔNG đụng)* |
+> | dashboard | `Dockerfile.dashboard` | *(để mặc định, KHÔNG đụng)* |
+>
+> 2 file này dùng đường dẫn COPY tính từ gốc repo nên build với context = gốc repo, không
+> cần set Root Directory (ô vốn khó tìm trên UI Railway).
+>
+> **Cách B (nếu bạn tìm thấy Root Directory):** set Root Directory = `license-platform` /
+> `license-dashboard`, để trống Dockerfile Path (Railway tự dò `Dockerfile` trong đó).
+> Root Directory nằm ở **Settings → bấm vào repo nguồn → Root Directory** (hoặc nút
+> "Add Root Directory").
 
 ---
 
@@ -52,8 +62,7 @@ Repo đã có sẵn `railway.json` cho mỗi service + Dockerfile, nên Railway 
 
 Tạo/sửa service trỏ tới repo, đặt:
 
-- **Settings → Root Directory:** `license-platform`
-  (Railway tự dò `license-platform/Dockerfile` — **để trống ô "Dockerfile Path"**).
+- **Settings → Build → Dockerfile Path:** `Dockerfile.api`  *(Cách A — khuyến nghị)*
 - **Settings → Networking:** bấm **Generate Domain** → ghi lại URL, vd
   `https://api-production-xxxx.up.railway.app`.
 
@@ -101,7 +110,7 @@ awk 'NR>1{printf "\\n"} {printf "%s", $0}' rsa_public.pem;  echo
 
 Trong cùng project: **New → GitHub Repo** (cùng repo) tạo service thứ hai, đặt:
 
-- **Settings → Root Directory:** `license-dashboard`
+- **Settings → Build → Dockerfile Path:** `Dockerfile.dashboard`  *(Cách A)*
 - **Settings → Networking → Generate Domain** → ghi lại URL dashboard.
 
 **Variables:**
@@ -144,31 +153,21 @@ Thử cấp 1 key SHOPVPS để xác nhận luồng hoạt động.
 
 ## Xử lý lỗi thường gặp
 
-### `railpack process exited with an error` (hoặc "Nixpacks build failed")
-Railway đang build bằng builder tự động chứ không dùng Dockerfile của mình — gần như luôn
-do **chưa set Root Directory**. Khắc phục:
+> **Cách chữa chung cho mọi lỗi build dưới đây:** dùng **Cách A** — ở mỗi service vào
+> **Settings → Build → Dockerfile Path** điền `Dockerfile.api` (service api) hoặc
+> `Dockerfile.dashboard` (service dashboard), **không cần đụng Root Directory**, rồi Redeploy.
 
-1. Mở service lỗi → **Settings → Source** → mục **Root Directory** → điền:
-   - `license-platform` nếu đây là service **api**, hoặc
-   - `license-dashboard` nếu đây là service **dashboard**.
-   Bấm lưu.
-2. Vào **Settings → Build** → **để TRỐNG ô "Dockerfile Path"**. Mỗi thư mục đã có sẵn
-   `Dockerfile` ngay tại gốc (`license-platform/Dockerfile`, `license-dashboard/Dockerfile`)
-   nên Railway tự dò ra. (Nếu trước đó bạn lỡ điền `license-platform/...` hay `Dockerfile`
-   vào ô này → xoá đi, vì nó gây lỗi `couldn't locate a dockerfile at path ...`.)
-3. **Redeploy**.
-4. Nếu mới có 1 service: tạo thêm service thứ hai cho phần còn lại (xem Bước 3/Bước 4) và
-   set Root Directory tương ứng. **Phải có 2 service.**
+### `railpack process exited with an error` (hoặc "Nixpacks build failed")
+Railway đang build bằng builder tự động, không dùng Dockerfile. → Điền **Dockerfile Path**
+= `Dockerfile.api` / `Dockerfile.dashboard` (Cách A). Phải có **2 service**.
 
 ### `couldn't locate a dockerfile at path Dockerfile in code archive`
-Bạn đã điền tay ô **Dockerfile Path** trên Railway → nó tìm sai chỗ. Khắc phục: set
-**Root Directory** đúng thư mục con và **xoá trống ô Dockerfile Path** (để Railway tự dò
-`Dockerfile` ở gốc Root Directory). Đừng khai báo đường dẫn Dockerfile thủ công.
+Ô **Dockerfile Path** đang trỏ sai (vd `Dockerfile` hoặc `license-platform/...`). → Sửa
+thành `Dockerfile.api` / `Dockerfile.dashboard` (2 file này nằm ngay gốc repo). Redeploy.
 
 ### `"/package.json": not found` khi `COPY package.json`
-Build context đang là gốc repo (Root Directory chưa có tác dụng). Set lại **Root Directory**
-= `license-dashboard` (hoặc `license-platform`) rồi Redeploy — context sẽ là thư mục con và
-COPY tìm thấy file.
+Dockerfile cũ build với context = gốc repo nhưng đường dẫn COPY lại không có tiền tố thư mục.
+→ Dùng `Dockerfile.api` / `Dockerfile.dashboard` (đã có đường dẫn COPY tính từ gốc repo).
 
 ### Dashboard gọi API sai địa chỉ / lỗi CORS
 - `NEXT_PUBLIC_API_URL` được nhúng **lúc build** → sau khi đổi phải **Redeploy** dashboard.
