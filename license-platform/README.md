@@ -45,7 +45,7 @@ ADMIN_PASSWORD=StrongPassword123!
 cd apps/api
 npm install
 npm run db:generate   # Generate Prisma client
-npm run db:migrate    # Run migrations
+npm run db:push       # Sync schema to DB (no migration files in repo)
 npm run db:seed       # Create admin + sample products
 ```
 

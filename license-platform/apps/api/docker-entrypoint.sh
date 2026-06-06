@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
-echo "🔧 Running database migrations..."
-npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+# The repo ships no SQL migration files, so sync the schema directly to the
+# database (creates/updates tables to match prisma/schema.prisma).
+echo "🔧 Syncing database schema (prisma db push)..."
+npx prisma db push --schema=/app/prisma/schema.prisma --skip-generate
 
 echo "🌱 Running database seed..."
 node -e "

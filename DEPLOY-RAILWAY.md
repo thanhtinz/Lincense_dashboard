@@ -100,7 +100,7 @@ awk 'NR>1{printf "\\n"} {printf "%s", $0}' rsa_private.pem; echo
 awk 'NR>1{printf "\\n"} {printf "%s", $0}' rsa_public.pem;  echo
 ```
 
-> Khi service `api` khởi động, `docker-entrypoint.sh` **tự chạy `prisma migrate deploy`
+> Khi service `api` khởi động, `docker-entrypoint.sh` **tự chạy `prisma db push`
 > (tạo bảng trên Neon) + seed admin/product SHOPVPS**. Không cần thao tác thủ công.
 > `PORT` do Railway tự cấp — app đã đọc `process.env.PORT`.
 

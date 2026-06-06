@@ -7,6 +7,7 @@
     "dev:api": "cd apps/api && npm run dev",
     "build:api": "cd apps/api && npm run build",
     "db:generate": "cd apps/api && npm run db:generate",
+    "db:push": "cd apps/api && npm run db:push",
     "db:migrate": "cd apps/api && npm run db:migrate",
     "db:seed": "cd apps/api && npx tsx ../../prisma/seed.ts",
     "db:studio": "cd apps/api && npm run db:studio",

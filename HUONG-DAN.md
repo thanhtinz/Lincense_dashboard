@@ -56,7 +56,7 @@ RSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
 cd apps/api
 npm install
 npm run db:generate          # sinh Prisma client
-npm run db:migrate           # tạo bảng
+npm run db:push              # tạo bảng (đồng bộ schema → DB; repo không dùng migrations)
 cd ../..
 npm run db:seed              # tạo admin + product SHOPVPS, YOURAI (mẫu)
 ```
@@ -174,7 +174,7 @@ tích hợp thẳng vào license-platform**. Để bật:
 
 - [ ] Postgres + Redis chạy được
 - [ ] `.env` của API đã có AES/JWT/RSA + DATABASE_URL + REDIS_URL
-- [ ] `db:migrate` + `db:seed` chạy xong, product SHOPVPS tồn tại
+- [ ] `db:push` + `db:seed` chạy xong, product SHOPVPS tồn tại
 - [ ] API chạy ở `:3001`, dashboard ở `:3000`, đăng nhập + đổi mật khẩu admin
 - [ ] Cấp được 1 key `LIC-SVP-...` cho domain test
 - [ ] ShopVPS đặt `LS_ENDPOINT` đúng, `/setup` nhập key → `valid: true`
