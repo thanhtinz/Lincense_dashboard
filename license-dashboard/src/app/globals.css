@@ -43,13 +43,6 @@ html, body {
   min-height: 100vh;
 }
 
-/* Shrink everything on phones: rem-based Tailwind spacing/text scale down.
-   (.input stays 16px via its own rule so iOS doesn't zoom on focus.) */
-@media (max-width: 640px) {
-  html { font-size: 12px; }
-  body { font-size: 13px; }
-}
-
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
