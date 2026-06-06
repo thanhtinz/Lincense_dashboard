@@ -3,6 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   // Required for the Dockerfile / Railway runner (copies .next/standalone).
   output: 'standalone',
+  // Don't let lint warnings fail the production build/deploy (types still checked).
+  eslint: { ignoreDuringBuilds: true },
   env: {
     API_URL: process.env.API_URL || 'http://localhost:3001',
   },

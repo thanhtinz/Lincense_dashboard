@@ -2,7 +2,9 @@ import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { authApi } from '@/lib/api';
 
-export const authOptions: NextAuthOptions = {
+// Not exported: App Router route files may only export route handlers
+// (GET/POST/...) — exporting authOptions fails `next build` type-checking.
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
