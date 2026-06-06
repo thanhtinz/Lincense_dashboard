@@ -4,7 +4,8 @@ Hệ thống quản lý giấy phép đa sản phẩm (multi-product license man
 gồm server cấp phép, dashboard quản trị và hạ tầng triển khai. Dùng để quản lý
 giấy phép cho sản phẩm **ShopVPS** (xem `INTEGRATION-SHOPVPS.md`).
 
-> Hướng dẫn triển khai từng bước: **`HUONG-DAN.md`**.
+> Hướng dẫn triển khai từng bước (local): **`HUONG-DAN.md`**.
+> Deploy production lên Railway + Neon Postgres: **`DEPLOY-RAILWAY.md`**.
 
 ## Cấu trúc
 

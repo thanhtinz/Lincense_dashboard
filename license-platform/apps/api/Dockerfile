@@ -33,6 +33,10 @@ COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package.json .
 COPY --from=builder /app/prisma ./prisma
+# Source + tsconfig so the entrypoint can run the TS seed (prisma/seed.ts
+# imports ../src/lib/crypto) via tsx on first boot.
+COPY --from=builder /app/apps/api/src ./src
+COPY --from=builder /app/apps/api/tsconfig.json ./tsconfig.json
 
 # Run migrations and start
 COPY apps/api/docker-entrypoint.sh ./docker-entrypoint.sh

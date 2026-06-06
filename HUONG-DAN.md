@@ -153,7 +153,9 @@ server down (vẫn chạy), quá 24h thì chặn về trang maintenance.
 
 ## 6. Production (tùy chọn)
 
-- `license-infra/` — Docker Compose + Nginx + SSL + script backup/ops để deploy.
+- **Railway + Neon** (khuyến nghị, đơn giản nhất): xem **`DEPLOY-RAILWAY.md`** —
+  Postgres chạy trên Neon, Redis dùng plugin Railway, deploy 2 service api + dashboard.
+- `license-infra/` — Docker Compose + Nginx + SSL + script backup/ops (tự host).
   Sửa `license-infra/.env.example`, trỏ domain, bật HTTPS.
 - Chạy API bằng Docker: `cd license-platform && npm run docker:up`.
 
