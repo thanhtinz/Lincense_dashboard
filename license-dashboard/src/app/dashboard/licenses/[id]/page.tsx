@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { licenseApi, type LicenseDetail } from '@/lib/api';
+import { DateField } from '@/components/DateField';
 import Link from 'next/link';
 
 export default function LicenseDetailPage({ params }: { params: { id: string } }) {
@@ -113,14 +114,8 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
       {showExtend && (
         <div className="card p-4 border-accent/30">
           <h3 className="text-sm font-medium text-text-primary mb-3">Extend Expiry Date</h3>
+          <DateField value={newExpiry} onChange={setNewExpiry} className="mb-3" />
           <div className="flex gap-2">
-            <input
-              type="date"
-              className="input"
-              value={newExpiry}
-              onChange={e => setNewExpiry(e.target.value)}
-              min={format(new Date(), 'yyyy-MM-dd')}
-            />
             <button className="btn btn-primary" onClick={handleExtend} disabled={extending || !newExpiry}>
               {extending ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : 'Save'}
             </button>

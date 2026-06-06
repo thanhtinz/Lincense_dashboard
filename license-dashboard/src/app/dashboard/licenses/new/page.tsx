@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { licenseApi, productApi, type ProductWithStats } from '@/lib/api';
+import { DateField } from '@/components/DateField';
 import Link from 'next/link';
 
 export default function IssueLicensePage() {
@@ -182,9 +183,8 @@ export default function IssueLicensePage() {
             <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
               Expiry Date
             </label>
-            <input type="date" className="input" value={form.expires_at}
-              onChange={e => set('expires_at', e.target.value)} />
-            <p className="text-xs text-text-muted mt-1">Blank = lifetime</p>
+            <DateField value={form.expires_at} onChange={v => set('expires_at', v)} />
+            <p className="text-xs text-text-muted mt-1">Để trống = vĩnh viễn</p>
           </div>
         </div>
 
