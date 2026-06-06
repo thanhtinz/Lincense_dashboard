@@ -1,0 +1,59 @@
+# =============================================================================
+# All-in-one Dockerfile — API (Express) + Dashboard (Next.js) trong MỘT service.
+# Build từ GỐC REPO. Trên Railway: Settings → Build → Dockerfile Path = Dockerfile.allinone
+#
+# Next.js là cổng public ($PORT); nó proxy /api/v1/* sang Express nội bộ (127.0.0.1:3001).
+# Một URL duy nhất, không cần CORS.
+# =============================================================================
+
+# ----------------------------- API build ------------------------------------
+FROM node:20-slim AS api-build
+WORKDIR /app
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY license-platform/apps/api/package.json ./apps/api/
+COPY license-platform/prisma/ ./prisma/
+WORKDIR /app/apps/api
+RUN npm install
+COPY license-platform/apps/api/src ./src
+COPY license-platform/apps/api/tsconfig.json .
+RUN npx prisma generate --schema=/app/prisma/schema.prisma
+RUN npm run build
+
+# ----------------------------- Web build ------------------------------------
+FROM node:20-slim AS web-build
+WORKDIR /app
+# Để trống = client gọi same-origin /api/v1 (được Next rewrite proxy vào API nội bộ).
+ARG NEXT_PUBLIC_API_URL=""
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+COPY license-dashboard/package.json ./
+RUN npm install
+COPY license-dashboard/ .
+RUN npm run build
+
+# ------------------------------- Runner --------------------------------------
+FROM node:20-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- API (chạy nội bộ trên :3001) ---
+COPY --from=api-build /app/apps/api/dist ./api/dist
+COPY --from=api-build /app/apps/api/node_modules ./api/node_modules
+COPY --from=api-build /app/apps/api/package.json ./api/package.json
+COPY --from=api-build /app/prisma ./api/prisma
+COPY --from=api-build /app/apps/api/src ./api/src
+COPY --from=api-build /app/apps/api/tsconfig.json ./api/tsconfig.json
+
+# --- Web (Next.js standalone, cổng public) ---
+COPY --from=web-build /app/.next/standalone ./web
+COPY --from=web-build /app/.next/static ./web/.next/static
+COPY --from=web-build /app/public ./web/public
+
+COPY allinone-entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+EXPOSE 3000
+ENTRYPOINT ["./entrypoint.sh"]

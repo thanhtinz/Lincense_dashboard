@@ -36,9 +36,11 @@ app.use(cors({
   credentials: true,
 }));
 
-// Force HTTPS in production
+// Force HTTPS — opt-in via FORCE_HTTPS=true. Off by default because Railway
+// terminates TLS at the edge, and in all-in-one mode the Next.js proxy calls
+// this API over plain HTTP on localhost (a 301 here would break those calls).
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.header('x-forwarded-proto') !== 'https') {
+  if (process.env.FORCE_HTTPS === 'true' && req.header('x-forwarded-proto') !== 'https') {
     return res.redirect(301, `https://${req.hostname}${req.url}`);
   }
   next();

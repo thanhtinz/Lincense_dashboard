@@ -13,6 +13,32 @@ Redis của Railway (hoặc Upstash).
 ShopVPS đặt LS_ENDPOINT = URL public của service `api`.
 ```
 
+## ⭐ Cách đơn giản nhất — GỘP 1 service (1 URL)
+
+Nếu muốn **một service / một URL duy nhất** (không CORS, không 2 domain): dùng
+`Dockerfile.allinone`. Next.js làm cổng public và proxy `/api/v1/*` sang API nội bộ.
+
+1. Tạo **1 service** từ repo → **Settings → Build → Dockerfile Path** = `Dockerfile.allinone`
+2. **Generate Domain** → ghi lại URL (vd `https://abc.up.railway.app`)
+3. Add **Redis** (New → Database → Add Redis)
+4. **Variables** (chỉ service này):
+   ```
+   DATABASE_URL    = <Neon, ?sslmode=require>
+   REDIS_URL       = ${{Redis.REDIS_URL}}
+   AES_MASTER_KEY  = <64 hex>
+   JWT_SECRET      = <random>
+   RSA_PRIVATE_KEY = <PEM, \n>
+   RSA_PUBLIC_KEY  = <PEM, \n>
+   ADMIN_EMAIL     = admin@yourdomain.com
+   ADMIN_PASSWORD  = <mạnh>
+   NEXTAUTH_URL    = <URL ở bước 2>
+   NEXTAUTH_SECRET = <openssl rand -base64 32>
+   ```
+   Không cần `NEXT_PUBLIC_API_URL` (mặc định same-origin), không cần `DASHBOARD_URL`.
+5. **Redeploy**. Mở URL → ra trang đăng nhập dashboard. ShopVPS đặt `LS_ENDPOINT` = **cùng URL này**.
+
+> Phần dưới (Cách A/B, 2 service) là phương án thay thế nếu bạn muốn tách API và web.
+
 > ❗ **Đây là monorepo → tạo 2 service riêng** (api + dashboard). Có 2 cách cấu hình build,
 > chọn **một**:
 >

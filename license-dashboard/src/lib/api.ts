@@ -1,4 +1,12 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3001';
+// Base URL for the license API.
+// - Browser (client): use NEXT_PUBLIC_API_URL, or '' for same-origin so the
+//   Next.js rewrite proxies /api/v1/* to the internal API (all-in-one mode).
+// - Server (NextAuth authorize, RSC): relative URLs don't work, so hit the API
+//   directly via INTERNAL_API_URL (defaults to the in-container API port).
+const API_URL =
+  typeof window === 'undefined'
+    ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001'
+    : process.env.NEXT_PUBLIC_API_URL || '';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
