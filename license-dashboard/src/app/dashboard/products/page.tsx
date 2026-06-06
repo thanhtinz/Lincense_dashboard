@@ -67,8 +67,8 @@ export default function ProductsPage() {
       {showCreate && (
         <div className="card p-5 border-accent/30 animate-slide-up">
           <h2 className="text-sm font-medium text-text-primary mb-4">Register New Product</h2>
-          <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 grid grid-cols-3 gap-3">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-text-muted mb-1.5">Name *</label>
                 <input className="input" placeholder="ShopVPS" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
@@ -153,7 +153,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-4 text-xs text-text-muted border-t border-border pt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted border-t border-border pt-3">
               <span className="font-mono">ID: {p.slug}</span>
               <span>Created {format(new Date(p.createdAt), 'dd MMM yyyy')}</span>
               <span>{p._count.licenses} total licenses</span>

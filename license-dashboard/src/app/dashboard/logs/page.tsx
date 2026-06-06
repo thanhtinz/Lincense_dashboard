@@ -55,11 +55,11 @@ export default function LogsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        <input className="input w-48" placeholder="Filter domain..."
+        <input className="input w-full sm:w-48" placeholder="Filter domain..."
           value={domain} onChange={e => { setDomain(e.target.value); setPage(1); }} />
-        <input className="input w-40 font-mono text-xs" placeholder="Filter IP..."
+        <input className="input w-full sm:w-40 font-mono text-xs" placeholder="Filter IP..."
           value={ip} onChange={e => { setIp(e.target.value); setPage(1); }} />
-        <select className="input w-52" value={result} onChange={e => { setResult(e.target.value); setPage(1); }}>
+        <select className="input w-full sm:w-52" value={result} onChange={e => { setResult(e.target.value); setPage(1); }}>
           <option value="">All results</option>
           <option value="SUCCESS">SUCCESS</option>
           <option value="KEY_NOT_FOUND">KEY_NOT_FOUND</option>

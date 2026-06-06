@@ -200,7 +200,7 @@ function StatCard({ label, value, color, sub, href }: {
   return (
     <Wrapper href={href as string} className="card p-4 block hover:border-white/10 transition-colors">
       <div className="text-xs text-text-muted uppercase tracking-wider mb-3">{label}</div>
-      <div className="text-3xl font-semibold" style={{ color: colors[color] }}>
+      <div className="text-2xl sm:text-3xl font-semibold" style={{ color: colors[color] }}>
         {value}
       </div>
       {sub && <div className="text-xs text-text-muted mt-1.5">{sub}</div>}

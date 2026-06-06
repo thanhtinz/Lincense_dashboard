@@ -78,18 +78,18 @@ export default function LicensesPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <input
-          className="input w-56"
+          className="input w-full sm:w-56"
           placeholder="Filter by email..."
           value={email}
           onChange={e => { setEmail(e.target.value); setPage(1); }}
         />
-        <select className="input w-40" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
+        <select className="input w-full sm:w-40" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All status</option>
           <option value="active">Active</option>
           <option value="revoked">Revoked</option>
           <option value="expired">Expired</option>
         </select>
-        <select className="input w-40" value={product} onChange={e => { setProduct(e.target.value); setPage(1); }}>
+        <select className="input w-full sm:w-40" value={product} onChange={e => { setProduct(e.target.value); setPage(1); }}>
           <option value="">All products</option>
           {products?.map(p => <option key={p.id} value={p.slug}>{p.slug}</option>)}
         </select>

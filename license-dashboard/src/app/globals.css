@@ -149,6 +149,10 @@ html, body {
   width: 100%;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
+/* On phones, inputs must be >=16px or iOS Safari auto-zooms on focus. */
+@media (max-width: 640px) {
+  .input { font-size: 16px; }
+}
 .input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
