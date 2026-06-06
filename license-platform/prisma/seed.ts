@@ -9,20 +9,19 @@ async function main() {
   console.log('🌱 Seeding database...\n');
 
   // ── Create Super Admin ────────────────────────────────────────────────────
-  const email = process.env.ADMIN_EMAIL || 'admin@yourdomain.com';
+  const email = (process.env.ADMIN_EMAIL || 'admin@yourdomain.com').toLowerCase();
   const password = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
   const name = process.env.ADMIN_NAME || 'Super Admin';
 
-  const existing = await prisma.adminUser.findUnique({ where: { email } });
-  if (!existing) {
-    const hash = await bcrypt.hash(password, 12);
-    await prisma.adminUser.create({
-      data: { email, passwordHash: hash, name, role: 'SUPER_ADMIN' },
-    });
-    console.log(`✅ Admin created: ${email}`);
-  } else {
-    console.log(`⏭  Admin already exists: ${email}`);
-  }
+  // Upsert so the admin password always matches ADMIN_PASSWORD on (re)deploy.
+  // The login route looks up by lowercased email, so store it lowercased.
+  const hash = await bcrypt.hash(password, 12);
+  await prisma.adminUser.upsert({
+    where: { email },
+    update: { passwordHash: hash, name, active: true },
+    create: { email, passwordHash: hash, name, role: 'SUPER_ADMIN' },
+  });
+  console.log(`✅ Admin ready: ${email} (password synced to ADMIN_PASSWORD)`);
 
   // ── Create sample products ────────────────────────────────────────────────
   const products = [
