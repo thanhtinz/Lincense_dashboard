@@ -53,7 +53,7 @@ Repo đã có sẵn `railway.json` cho mỗi service + Dockerfile, nên Railway 
 Tạo/sửa service trỏ tới repo, đặt:
 
 - **Settings → Root Directory:** `license-platform`
-  (Railway sẽ đọc `license-platform/railway.json` → build bằng `apps/api/Dockerfile`).
+  (Railway tự dò `license-platform/Dockerfile` — **để trống ô "Dockerfile Path"**).
 - **Settings → Networking:** bấm **Generate Domain** → ghi lại URL, vd
   `https://api-production-xxxx.up.railway.app`.
 
@@ -152,12 +152,23 @@ do **chưa set Root Directory**. Khắc phục:
    - `license-platform` nếu đây là service **api**, hoặc
    - `license-dashboard` nếu đây là service **dashboard**.
    Bấm lưu.
-2. Vào **Settings → Build**, đảm bảo **Builder = Dockerfile** (Railway sẽ tự nhận từ
-   `railway.json`; nếu đang bị ép Railpack/Nixpacks thì đổi lại). Dockerfile path đã khai
-   báo sẵn trong `railway.json` (`apps/api/Dockerfile` cho api).
+2. Vào **Settings → Build** → **để TRỐNG ô "Dockerfile Path"**. Mỗi thư mục đã có sẵn
+   `Dockerfile` ngay tại gốc (`license-platform/Dockerfile`, `license-dashboard/Dockerfile`)
+   nên Railway tự dò ra. (Nếu trước đó bạn lỡ điền `license-platform/...` hay `Dockerfile`
+   vào ô này → xoá đi, vì nó gây lỗi `couldn't locate a dockerfile at path ...`.)
 3. **Redeploy**.
 4. Nếu mới có 1 service: tạo thêm service thứ hai cho phần còn lại (xem Bước 3/Bước 4) và
    set Root Directory tương ứng. **Phải có 2 service.**
+
+### `couldn't locate a dockerfile at path Dockerfile in code archive`
+Bạn đã điền tay ô **Dockerfile Path** trên Railway → nó tìm sai chỗ. Khắc phục: set
+**Root Directory** đúng thư mục con và **xoá trống ô Dockerfile Path** (để Railway tự dò
+`Dockerfile` ở gốc Root Directory). Đừng khai báo đường dẫn Dockerfile thủ công.
+
+### `"/package.json": not found` khi `COPY package.json`
+Build context đang là gốc repo (Root Directory chưa có tác dụng). Set lại **Root Directory**
+= `license-dashboard` (hoặc `license-platform`) rồi Redeploy — context sẽ là thư mục con và
+COPY tìm thấy file.
 
 ### Dashboard gọi API sai địa chỉ / lỗi CORS
 - `NEXT_PUBLIC_API_URL` được nhúng **lúc build** → sau khi đổi phải **Redeploy** dashboard.

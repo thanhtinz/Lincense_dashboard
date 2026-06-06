@@ -44,7 +44,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: Dockerfile
     container_name: lp_api
     restart: unless-stopped
     depends_on:
