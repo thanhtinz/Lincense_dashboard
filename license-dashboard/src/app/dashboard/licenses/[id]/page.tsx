@@ -19,6 +19,7 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
     () => licenseApi.get(token, params.id)
   );
 
+  const [keyCopied, setKeyCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [extending, setExtending] = useState(false);
   const [newExpiry, setNewExpiry] = useState('');
@@ -154,31 +155,47 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
   return (
     <div className="space-y-5 max-w-4xl">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <Link href="/dashboard/licenses" className="text-xs text-text-muted hover:text-accent mb-2 inline-flex items-center gap-1">
-            ← Back to Licenses
-          </Link>
-          <h1 className="text-xl font-semibold text-text-primary mt-1">License Detail</h1>
-          <div className="mt-2"><span className="key-badge text-sm">{license.key}</span></div>
-        </div>
-        <div className="flex gap-2 flex-wrap justify-end">
-          <button className="btn btn-ghost" onClick={openEdit}>Sửa</button>
-          <button className="btn btn-ghost" onClick={() => setShowExtend(true)}>Gia hạn</button>
-          {license.revoked ? (
-            <button className="btn btn-ghost" onClick={handleRestore} disabled={revoking}>
-              Khôi phục
+      <div>
+        <Link href="/dashboard/licenses" className="text-xs text-text-muted hover:text-accent mb-2 inline-flex items-center gap-1">
+          ← Back to Licenses
+        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-lg font-semibold text-text-primary flex-shrink-0">License</h1>
+            <span className="key-badge text-xs truncate max-w-[220px] sm:max-w-none">{license.key}</span>
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(license.key);
+                setKeyCopied(true);
+                setTimeout(() => setKeyCopied(false), 2000);
+              }}
+              className="flex-shrink-0 p-1 rounded text-text-muted hover:text-accent transition-colors"
+              title="Copy key"
+            >
+              {keyCopied
+                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--status-active)" strokeWidth="2.5"><path d="m20 6-11 11-5-5"/></svg>
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>}
             </button>
-          ) : (
-            <button className="btn btn-danger" onClick={handleRevoke} disabled={revoking}>
-              {revoking && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-              Thu hồi
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={openEdit}>Sửa</button>
+            <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={() => setShowExtend(true)}>Gia hạn</button>
+            {license.revoked ? (
+              <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={handleRestore} disabled={revoking}>
+                {revoking && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+                Khôi phục
+              </button>
+            ) : (
+              <button className="btn btn-danger" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={handleRevoke} disabled={revoking}>
+                {revoking && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+                Thu hồi
+              </button>
+            )}
+            <button className="btn btn-danger" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={handleDelete} disabled={deleting}>
+              {deleting && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+              Xoá
             </button>
-          )}
-          <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
-            {deleting && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-            Xoá
-          </button>
+          </div>
         </div>
       </div>
 

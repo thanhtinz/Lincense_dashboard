@@ -154,7 +154,9 @@ export default function LicensesPage() {
                     className="accent-[var(--accent)]"
                   />
                 </td>
-                <td><span className="key-badge">{lic.key}</span></td>
+                <td>
+                  <span className="font-mono text-xs text-text-muted">···{lic.key.slice(-8)}</span>
+                </td>
                 <td>
                   <div className="text-text-primary text-sm leading-none">{lic.customerName}</div>
                   <div className="text-text-muted text-xs mt-0.5">{lic.customerEmail}</div>
