@@ -1,9 +1,14 @@
 # =============================================================================
 # Dockerfile cho service API — build từ GỐC REPO (không cần set Root Directory)
 # Trên Railway: Settings → Build → Dockerfile Path = Dockerfile.api
+# Dùng Debian slim (không phải Alpine) để Prisma + OpenSSL 3 chạy ổn định.
 # =============================================================================
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
+
+# Prisma cần openssl + ca-certificates (kết nối SSL tới Neon)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package + prisma (đường dẫn tính từ gốc repo)
 COPY license-platform/apps/api/package.json ./apps/api/
@@ -20,9 +25,10 @@ RUN npx prisma generate --schema=/app/prisma/schema.prisma
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
-RUN apk add --no-cache curl
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/node_modules ./node_modules

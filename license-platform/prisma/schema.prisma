@@ -1,6 +1,9 @@
 // prisma/schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Engines for the Docker/Railway runtime (Debian bookworm-slim, OpenSSL 3)
+  // plus the local dev machine.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

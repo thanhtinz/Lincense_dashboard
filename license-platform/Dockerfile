@@ -1,6 +1,11 @@
-FROM node:20-alpine AS builder
+# Build context = license-platform/  (dùng cho docker-compose, hoặc Railway khi set
+# Root Directory = license-platform). Debian slim để Prisma + OpenSSL 3 chạy ổn định.
+FROM node:20-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY apps/api/package.json ./apps/api/
@@ -8,7 +13,7 @@ COPY prisma/ ./prisma/
 
 # Install dependencies
 WORKDIR /app/apps/api
-RUN npm install --frozen-lockfile
+RUN npm install
 
 # Copy source
 COPY apps/api/src ./src
@@ -21,12 +26,12 @@ RUN npx prisma generate --schema=/app/prisma/schema.prisma
 RUN npm run build
 
 # ─────────────────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy built files
 COPY --from=builder /app/apps/api/dist ./dist
