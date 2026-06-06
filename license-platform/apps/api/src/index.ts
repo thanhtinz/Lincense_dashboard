@@ -90,9 +90,17 @@ async function main() {
   await prisma.$connect();
   console.log('[DB] PostgreSQL connected');
 
-  // Connect Redis
+  // Connect Redis. The client uses lazyConnect, but rate-limit middleware may
+  // have already triggered a connection — only call connect() from the initial
+  // 'wait' state, and ignore an already-connected race.
   const redis = getRedis();
-  await redis.connect();
+  if (redis.status === 'wait') {
+    try {
+      await redis.connect();
+    } catch (err: any) {
+      if (!/already connect/i.test(err?.message ?? '')) throw err;
+    }
+  }
 
   // Start background jobs
   startCronJobs();
