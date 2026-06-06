@@ -21,20 +21,37 @@ export default function ProductsPage() {
 
   const [form, setForm] = useState({ name: '', slug: '', prefix: '', description: '', versions: '' });
 
-  function resetForm() { setForm({ name: '', slug: '', prefix: '', description: '', versions: '' }); }
+  function resetForm() { setForm({ name: '', slug: '', prefix: '', description: '', versions: '' }); setEditId(null); }
 
-  async function handleCreate(e: React.FormEvent) {
+  function openCreate() { resetForm(); setShowCreate(true); }
+
+  function openEdit(p: ProductWithStats) {
+    setForm({
+      name: p.name, slug: p.slug, prefix: p.prefix,
+      description: p.description ?? '', versions: (p.versions ?? []).join(', '),
+    });
+    setEditId(p.id);
+    setShowCreate(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await productApi.create(token, {
+      const payload = {
         name: form.name,
         slug: form.slug.toUpperCase(),
         prefix: form.prefix.toUpperCase(),
         description: form.description,
         versions: form.versions.split(',').map(v => v.trim()).filter(Boolean),
-      });
-      toast.success(`Product ${form.slug.toUpperCase()} created`);
+      };
+      if (editId) {
+        await productApi.update(token, editId, payload);
+        toast.success(`Đã cập nhật ${payload.slug}`);
+      } else {
+        await productApi.create(token, payload);
+        toast.success(`Đã tạo product ${payload.slug}`);
+      }
       resetForm();
       setShowCreate(false);
       mutate();
@@ -50,6 +67,15 @@ export default function ProductsPage() {
     } catch (e: any) { toast.error(e.message); }
   }
 
+  async function handleDelete(p: ProductWithStats) {
+    if (!confirm(`Xoá product ${p.slug}? Chỉ xoá được khi không còn license nào.`)) return;
+    try {
+      await productApi.delete(token, p.id);
+      toast.success(`Đã xoá ${p.slug}`);
+      mutate();
+    } catch (e: any) { toast.error(e.message); }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -57,7 +83,7 @@ export default function ProductsPage() {
           <h1 className="text-xl font-semibold text-text-primary">Products</h1>
           <p className="text-sm text-text-muted mt-0.5">{products?.length ?? 0} registered products</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+        <button className="btn btn-primary" onClick={openCreate}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
           New Product
         </button>
@@ -66,8 +92,8 @@ export default function ProductsPage() {
       {/* Create Form */}
       {showCreate && (
         <div className="card p-5 border-accent/30 animate-slide-up">
-          <h2 className="text-sm font-medium text-text-primary mb-4">Register New Product</h2>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <h2 className="text-sm font-medium text-text-primary mb-4">{editId ? 'Sửa Product' : 'Register New Product'}</h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-text-muted mb-1.5">Name *</label>
@@ -97,7 +123,7 @@ export default function ProductsPage() {
             <div className="col-span-2 flex gap-2 justify-end pt-1">
               <button type="button" className="btn btn-ghost" onClick={() => { setShowCreate(false); resetForm(); }}>Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : 'Create Product'}
+                {loading ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : (editId ? 'Lưu' : 'Create Product')}
               </button>
             </div>
           </form>
@@ -131,14 +157,18 @@ export default function ProductsPage() {
                   <div className="text-lg font-semibold text-text-primary">{p.active_licenses}</div>
                   <div className="text-xs text-text-muted">active licenses</div>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5 justify-end">
+                  <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '12px' }}
+                    onClick={() => openEdit(p)}>Sửa</button>
                   <button
                     className={`btn ${p.active ? 'btn-ghost' : 'btn-primary'}`}
                     style={{ padding: '5px 10px', fontSize: '12px' }}
                     onClick={() => handleToggleActive(p)}
                   >
-                    {p.active ? 'Deactivate' : 'Activate'}
+                    {p.active ? 'Tắt' : 'Bật'}
                   </button>
+                  <button className="btn btn-danger" style={{ padding: '5px 10px', fontSize: '12px' }}
+                    onClick={() => handleDelete(p)}>Xoá</button>
                 </div>
               </div>
             </div>

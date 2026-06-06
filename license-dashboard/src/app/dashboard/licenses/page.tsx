@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { licenseApi, productApi, type License, type Paginated, type ProductWithStats } from '@/lib/api';
+import { IssueKeyForm } from '@/components/IssueKeyForm';
 import clsx from 'clsx';
 
 export default function LicensesPage() {
@@ -18,6 +19,7 @@ export default function LicensesPage() {
   const [email, setEmail] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [revoking, setRevoking] = useState(false);
+  const [showIssue, setShowIssue] = useState(false);
 
   const params: Record<string, string> = { page: String(page), limit: '20' };
   if (status) params.status = status;
@@ -69,11 +71,27 @@ export default function LicensesPage() {
             {data?.pagination.total ?? 0} total keys
           </p>
         </div>
-        <Link href="/dashboard/licenses/new" className="btn btn-primary">
+        <button className="btn btn-primary" onClick={() => setShowIssue(true)}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          Issue Key
-        </Link>
+          Cấp key
+        </button>
       </div>
+
+      {/* Issue Key Modal */}
+      {showIssue && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4"
+          onClick={() => setShowIssue(false)}>
+          <div className="card p-5 w-full max-w-xl my-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-text-primary">Cấp license key</h2>
+              <button onClick={() => setShowIssue(false)} className="text-text-muted hover:text-text-primary p-1" aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <IssueKeyForm token={token} onIssued={() => mutate()} onClose={() => setShowIssue(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">

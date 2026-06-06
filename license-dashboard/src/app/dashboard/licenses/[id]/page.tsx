@@ -60,6 +60,89 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
     finally { setExtending(false); }
   }
 
+  // ── Edit license fields ──────────────────────────────────────────────────
+  const [showEdit, setShowEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [edit, setEdit] = useState({
+    customer_name: '', customer_email: '', version_range: '',
+    max_domain_changes: '3', notes: '', hw_binding: false,
+  });
+
+  function openEdit() {
+    if (!license) return;
+    setEdit({
+      customer_name: license.customerName,
+      customer_email: license.customerEmail,
+      version_range: license.versionRange ?? '',
+      max_domain_changes: String(license.maxDomainChanges),
+      notes: license.notes ?? '',
+      hw_binding: license.hwBinding,
+    });
+    setShowEdit(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!license) return;
+    setSaving(true);
+    try {
+      await licenseApi.update(token, license.id, {
+        customer_name: edit.customer_name,
+        customer_email: edit.customer_email,
+        version_range: edit.version_range.trim() || null,
+        max_domain_changes: parseInt(edit.max_domain_changes || '0', 10),
+        notes: edit.notes.trim() || null,
+        hw_binding: edit.hw_binding,
+      });
+      toast.success('License updated.');
+      setShowEdit(false);
+      mutate();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
+  }
+
+  // ── Domain management ────────────────────────────────────────────────────
+  const [newDomain, setNewDomain] = useState('');
+  const [domainBusy, setDomainBusy] = useState(false);
+
+  async function handleAddDomain() {
+    if (!license || !newDomain.trim()) return;
+    const d = newDomain.trim().toLowerCase().replace(/^www\./, '');
+    if (license.domains.includes(d)) { toast.error('Domain already exists'); return; }
+    setDomainBusy(true);
+    try {
+      await licenseApi.update(token, license.id, { domains: [...license.domains, d] });
+      toast.success('Domain added.');
+      setNewDomain('');
+      mutate();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setDomainBusy(false); }
+  }
+
+  async function handleRemoveDomain(d: string) {
+    if (!license) return;
+    if (license.domains.length <= 1) { toast.error('At least one domain is required'); return; }
+    setDomainBusy(true);
+    try {
+      await licenseApi.update(token, license.id, { domains: license.domains.filter(x => x !== d) });
+      toast.success('Domain removed.');
+      mutate();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setDomainBusy(false); }
+  }
+
+  // ── Delete license ───────────────────────────────────────────────────────
+  const [deleting, setDeleting] = useState(false);
+  async function handleDelete() {
+    if (!license) return;
+    if (!confirm(`Xoá vĩnh viễn key ${license.key}? Không thể hoàn tác.`)) return;
+    setDeleting(true);
+    try {
+      await licenseApi.remove(token, license.id);
+      toast.success('License deleted.');
+      router.push('/dashboard/licenses');
+    } catch (e: any) { toast.error(e.message); setDeleting(false); }
+  }
+
   if (!license) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -80,19 +163,22 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
           <div className="mt-2"><span className="key-badge text-sm">{license.key}</span></div>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
-          <button className="btn btn-ghost" onClick={() => setShowExtend(true)}>
-            Extend Expiry
-          </button>
+          <button className="btn btn-ghost" onClick={openEdit}>Sửa</button>
+          <button className="btn btn-ghost" onClick={() => setShowExtend(true)}>Gia hạn</button>
           {license.revoked ? (
             <button className="btn btn-ghost" onClick={handleRestore} disabled={revoking}>
-              Restore
+              Khôi phục
             </button>
           ) : (
             <button className="btn btn-danger" onClick={handleRevoke} disabled={revoking}>
               {revoking && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-              Revoke
+              Thu hồi
             </button>
           )}
+          <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
+            {deleting && <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+            Xoá
+          </button>
         </div>
       </div>
 
@@ -124,6 +210,51 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
+      {/* Edit Modal */}
+      {showEdit && (
+        <div className="card p-4 border-accent/30 space-y-3">
+          <h3 className="text-sm font-medium text-text-primary">Sửa thông tin key</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Khách hàng</label>
+              <input className="input" value={edit.customer_name}
+                onChange={e => setEdit(s => ({ ...s, customer_name: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Email</label>
+              <input className="input font-mono" value={edit.customer_email}
+                onChange={e => setEdit(s => ({ ...s, customer_email: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Version range</label>
+              <input className="input font-mono" placeholder="* (tất cả)" value={edit.version_range}
+                onChange={e => setEdit(s => ({ ...s, version_range: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Giới hạn đổi domain</label>
+              <input className="input" type="number" min={0} value={edit.max_domain_changes}
+                onChange={e => setEdit(s => ({ ...s, max_domain_changes: e.target.value }))} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-text-muted mb-1">Ghi chú</label>
+            <input className="input" value={edit.notes}
+              onChange={e => setEdit(s => ({ ...s, notes: e.target.value }))} />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-text-secondary">
+            <input type="checkbox" checked={edit.hw_binding}
+              onChange={e => setEdit(s => ({ ...s, hw_binding: e.target.checked }))} />
+            Khoá phần cứng (HW binding)
+          </label>
+          <div className="flex gap-2">
+            <button className="btn btn-primary" onClick={handleSaveEdit} disabled={saving}>
+              {saving ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : 'Lưu'}
+            </button>
+            <button className="btn btn-ghost" onClick={() => setShowEdit(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Details Grid */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="card p-5">
@@ -142,7 +273,27 @@ export default function LicenseDetailPage({ params }: { params: { id: string } }
         <div className="card p-5">
           <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">License Config</h2>
           <dl className="space-y-3">
-            <Row label="Domain(s)" value={license.domains.join(', ')} mono />
+            <div className="flex justify-between items-start gap-4">
+              <dt className="text-xs text-text-muted flex-shrink-0 pt-1">Domain(s)</dt>
+              <dd className="text-sm text-right min-w-0">
+                <div className="flex flex-wrap gap-1.5 justify-end mb-2">
+                  {license.domains.map(d => (
+                    <span key={d} className="inline-flex items-center gap-1 font-mono text-xs bg-surface-overlay border border-border rounded px-2 py-0.5">
+                      <span className="break-all">{d}</span>
+                      <button onClick={() => handleRemoveDomain(d)} disabled={domainBusy}
+                        className="text-text-muted hover:text-status-revoked leading-none" aria-label="Remove domain">×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-1.5 justify-end">
+                  <input className="input" style={{ maxWidth: '170px' }} placeholder="thêm domain..."
+                    value={newDomain} onChange={e => setNewDomain(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddDomain(); } }} />
+                  <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '12px' }}
+                    onClick={handleAddDomain} disabled={domainBusy || !newDomain.trim()}>Thêm</button>
+                </div>
+              </dd>
+            </div>
             <Row label="Version Range" value={license.versionRange ?? '* (all)'} mono />
             <Row label="Expires" value={license.expiresAt ? format(new Date(license.expiresAt), 'dd MMM yyyy') : 'Never (lifetime)'} mono />
             <Row label="HW Binding" value={license.hwBinding ? 'Enabled' : 'Disabled'} />

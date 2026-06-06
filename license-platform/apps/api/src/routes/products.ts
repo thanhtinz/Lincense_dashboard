@@ -136,23 +136,20 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response): Promise
   const product = await prisma.product.findUnique({ where: { id: req.params.id } });
   if (!product) { res.status(404).json({ error: 'Product not found' }); return; }
 
-  const activeLicenses = await prisma.license.count({
-    where: { productId: req.params.id, revoked: false },
+  const licenseCount = await prisma.license.count({
+    where: { productId: req.params.id },
   });
 
-  if (activeLicenses > 0) {
+  if (licenseCount > 0) {
     res.status(409).json({
-      error: `Cannot delete product with ${activeLicenses} active license(s). Revoke all licenses first.`,
+      error: `Cannot delete: product has ${licenseCount} license(s). Delete those first, or deactivate the product instead.`,
     });
     return;
   }
 
-  await prisma.product.update({
-    where: { id: req.params.id },
-    data: { active: false },
-  });
+  await prisma.product.delete({ where: { id: req.params.id } });
 
-  res.json({ success: true, message: 'Product deactivated' });
+  res.json({ success: true, message: 'Product deleted' });
 });
 
 export default router;

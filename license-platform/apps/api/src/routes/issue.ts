@@ -191,4 +191,62 @@ router.patch('/:id/extend', requireAdmin, async (req: Request, res: Response): P
   res.json({ success: true, expires_at: updated.expiresAt?.toISOString() });
 });
 
+// ── PATCH /issue/:id — Edit license fields (admin) ────────────────────────
+const UpdateLicenseSchema = z.object({
+  customer_name: z.string().min(1).max(100).optional(),
+  customer_email: z.string().email().optional(),
+  domains: z.array(z.string().min(1).max(255)).min(1).max(20).optional(),
+  version_range: z.string().max(50).nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
+  hw_binding: z.boolean().optional(),
+  max_domain_changes: z.number().int().min(0).max(50).optional(),
+});
+
+router.patch('/:id', requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  const parsed = UpdateLicenseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+    return;
+  }
+
+  const license = await prisma.license.findUnique({ where: { id: req.params.id } });
+  if (!license) { res.status(404).json({ error: 'License not found' }); return; }
+
+  const b = parsed.data;
+  const data: any = {};
+  if (b.customer_name !== undefined) data.customerName = b.customer_name;
+  if (b.customer_email !== undefined) data.customerEmail = b.customer_email;
+  if (b.domains !== undefined) {
+    data.domains = b.domains.map((d) => d.toLowerCase().replace(/^www\./, ''));
+  }
+  if (b.version_range !== undefined) data.versionRange = b.version_range;
+  if (b.notes !== undefined) data.notes = b.notes;
+  if (b.max_domain_changes !== undefined) data.maxDomainChanges = b.max_domain_changes;
+  if (b.hw_binding !== undefined) {
+    data.hwBinding = b.hw_binding;
+    if (!b.hw_binding) data.hwFingerprint = null; // unlock hardware on disable
+  }
+
+  const updated = await prisma.license.update({
+    where: { id: req.params.id },
+    data,
+    include: { product: { select: { slug: true, name: true } } },
+  });
+
+  console.log(`[issue] License updated: ${updated.key} | Admin: ${req.admin?.email}`);
+  res.json({ success: true, license: updated });
+});
+
+// ── DELETE /issue/:id — Permanently delete a license (admin) ──────────────
+router.delete('/:id', requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  const license = await prisma.license.findUnique({ where: { id: req.params.id } });
+  if (!license) { res.status(404).json({ error: 'License not found' }); return; }
+
+  // VerifyLog.licenseId is optional → Prisma sets it null on delete (logs kept).
+  await prisma.license.delete({ where: { id: req.params.id } });
+
+  console.log(`[issue] License DELETED: ${license.key} | Admin: ${req.admin?.email}`);
+  res.json({ success: true, message: 'License deleted' });
+});
+
 export default router;

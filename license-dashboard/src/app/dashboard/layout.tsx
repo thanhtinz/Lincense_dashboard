@@ -8,7 +8,6 @@ import clsx from 'clsx';
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: GridIcon },
   { href: '/dashboard/licenses', label: 'Licenses', icon: KeyIcon },
-  { href: '/dashboard/licenses/new', label: 'Issue Key', icon: PlusIcon },
   { href: '/dashboard/products', label: 'Products', icon: BoxIcon },
   { href: '/dashboard/logs', label: 'Verify Logs', icon: LogIcon },
 ];

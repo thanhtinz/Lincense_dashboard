@@ -72,6 +72,10 @@ export const licenseApi = {
     request('/issue/' + id + '/extend', {
       method: 'PATCH', token, body: JSON.stringify({ expires_at }),
     }),
+  update: (token: string, id: string, body: Record<string, unknown>) =>
+    request(`/issue/${id}`, { method: 'PATCH', token, body: JSON.stringify(body) }),
+  remove: (token: string, id: string) =>
+    request(`/issue/${id}`, { method: 'DELETE', token }),
   revoke: (token: string, key: string, reason?: string) =>
     request('/revoke', { method: 'POST', token, body: JSON.stringify({ key, reason }) }),
   restore: (token: string, key: string) =>
