@@ -1,7 +1,7 @@
 'use client';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import clsx from 'clsx';
 
@@ -17,10 +17,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => { setNavOpen(false); }, [pathname]);
 
   if (status === 'loading') return (
     <div className="min-h-screen flex items-center justify-center">
@@ -32,10 +36,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 border-r border-border bg-surface-raised flex flex-col">
-        {/* Logo */}
-        <div className="p-5 border-b border-border">
+      {/* Mobile overlay */}
+      {navOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          onClick={() => setNavOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/* Sidebar — slide-in drawer on mobile, static on desktop */}
+      <aside
+        className={clsx(
+          'fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200',
+          'lg:static lg:z-auto lg:w-56 lg:translate-x-0 flex-shrink-0',
+          'border-r border-border bg-surface-raised flex flex-col',
+          navOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        {/* Logo + close (close only on mobile) */}
+        <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded bg-accent-dim border border-accent/30 flex items-center justify-center flex-shrink-0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
@@ -48,10 +68,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="text-[10px] font-mono text-text-muted mt-0.5">v1.0</div>
             </div>
           </div>
+          <button
+            onClick={() => setNavOpen(false)}
+            className="lg:hidden text-text-muted hover:text-text-primary p-1"
+            aria-label="Close menu"
+          >
+            <CloseIcon size={18} />
+          </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = href === '/dashboard'
               ? pathname === '/dashboard'
@@ -90,17 +117,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto bg-surface">
-        <div className="p-6 md:p-8 animate-fade-in">
-          {children}
-        </div>
-      </main>
+      {/* Main column */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar with hamburger */}
+        <header className="lg:hidden flex items-center gap-3 h-14 px-4 border-b border-border bg-surface-raised sticky top-0 z-20">
+          <button
+            onClick={() => setNavOpen(true)}
+            className="text-text-secondary hover:text-text-primary p-1 -ml-1"
+            aria-label="Open menu"
+          >
+            <MenuIcon size={22} />
+          </button>
+          <span className="font-semibold text-text-primary text-sm">LicensePlatform</span>
+        </header>
+
+        <main className="flex-1 overflow-auto bg-surface">
+          <div className="p-4 sm:p-6 md:p-8 animate-fade-in">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
 
 // ── Inline icons ─────────────────────────────────────────────────────────
+function MenuIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+}
+function CloseIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+}
 function GridIcon({ size = 16 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>;
 }

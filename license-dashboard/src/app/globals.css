@@ -104,6 +104,10 @@ html, body {
 
 /* Table */
 .data-table { width: 100%; border-collapse: collapse; }
+/* On narrow screens, keep a sensible min width and let the card scroll
+   horizontally instead of crushing/wrapping the columns. */
+.data-table { min-width: 560px; }
+.card:has(> .data-table) { overflow-x: auto; }
 .data-table th {
   text-align: left;
   font-size: 11px;

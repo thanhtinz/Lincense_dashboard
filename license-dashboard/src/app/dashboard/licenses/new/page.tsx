@@ -140,7 +140,7 @@ export default function IssueLicensePage() {
         </div>
 
         {/* Customer */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
               Name <span className="text-status-revoked">*</span>
@@ -169,7 +169,7 @@ export default function IssueLicensePage() {
         </div>
 
         {/* Version + Expiry */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
               Version Range
@@ -189,7 +189,7 @@ export default function IssueLicensePage() {
         </div>
 
         {/* Options */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
               Max Domain Changes
